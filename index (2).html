@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FNM Submissions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--fg:#1d2530;--muted:#5b6675;--panel:#fff;--line:#e3e7ee;--strip:#f2f4f7;--navy:#0b3a7e;--tipbg:#fff;--tipbd:#c9d1dc}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#f6f7f9;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1100px;margin:0 auto;padding:12px;position:relative}
+.hdr{background:var(--navy);color:#fff;text-align:center;font-weight:700;font-size:18px;padding:14px;border-radius:4px}
+.bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 2px 2px;font-size:12px;color:var(--muted)}
+select,input[type=search],input[type=date],input[type=text],textarea{font:inherit;font-size:12px;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:3px;padding:5px 8px}
+.status{text-align:center;font-size:12px;color:var(--muted);padding:8px}
+.status.bad{color:#b3262b}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:10px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.kpi .v{font-size:28px;line-height:1.1;margin-top:4px;font-weight:400}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;margin:10px 0;min-width:0}
+.strip{background:var(--strip);font-weight:600;font-size:12px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.body{padding:8px 10px 10px}
+.lg{display:inline-flex;align-items:center;gap:5px;font-weight:400;font-size:11px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.chart{width:100%;min-height:250px}
+.chart svg text{font-size:10px;fill:var(--muted)}
+.chart .val{fill:var(--fg)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .col{fill:transparent}
+.chart .col:hover{fill:#000;fill-opacity:.05}
+.chart .shade{fill:#d9dee6;fill-opacity:.35}
+.section{margin:18px 0 0;background:var(--navy);color:#fff;text-align:center;font-weight:700;font-size:14px;padding:8px;border-radius:3px}
+.addform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 12px}
+.addform label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.addform .wide{grid-column:1/-1}
+.addform textarea{resize:vertical}
+.addform .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+button{background:var(--navy);color:#fff;border:0;border-radius:3px;padding:7px 16px;font:inherit;font-size:12px;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+button.danger{background:#b3262b}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{background:#fff;color:var(--fg);border:0;border-right:1px solid var(--line);padding:5px 12px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--navy);color:#fff}
+.tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 10px 0}
+.tbl-box{max-height:520px;overflow:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{position:sticky;top:0;background:#fff;text-align:left;color:var(--muted);font-weight:600;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.issue{min-width:240px}
+td.empty{color:var(--muted);text-align:center;padding:14px}
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pill{display:inline-block;font-size:10px;font-weight:700;color:#fff;padding:1px 6px;border-radius:999px;white-space:nowrap}
+.src{font-size:11px;color:var(--muted)}
+.foot{font-size:11px;color:var(--muted);line-height:1.5;padding:12px 2px}
+.tip{position:absolute;display:none;pointer-events:none;z-index:20;max-width:340px;background:var(--tipbg);border:1px solid var(--tipbd);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.12);padding:8px 10px;font-size:12px}
+.tip .tt-h{font-weight:600}
+.tip .tt-sub{color:var(--muted);margin:2px 0 4px}
+.tip .tt-item{margin-top:6px;line-height:1.35}
+.tip .tt-d{color:var(--muted)}
+tr.off td{color:#8a93a1}
+tr.off td .clamp{text-decoration:line-through}
+.ctl select{font-size:11px;padding:3px 5px}
+.acts{white-space:nowrap}
+.acts button{padding:3px 8px;font-size:11px;margin-right:4px}
+.acts button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+.acts button.danger{background:#b3262b}
+.tag{font-size:10px;padding:1px 5px;border-radius:3px;background:#eef1f5;color:var(--muted);margin-left:4px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px}
+.modal[hidden]{display:none}
+.panel{background:#fff;border-radius:6px;max-width:580px;width:100%;padding:14px;max-height:90vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.panel h3{margin:0 0 10px;font-size:14px}
+.panel .addform{margin-bottom:10px}
+.panel .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.panel button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+@media (max-width:640px){.opt{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="hdr">FNM Consolidated · Live Submissions</div>
+
+  <div class="seg" id="tabs" style="margin:10px 0 0;display:inline-flex">
+    <button type="button" data-view="dash" class="on">Dashboard</button>
+    <button type="button" data-view="all">All Issues</button>
+  </div>
+
+  <div id="view-dash">
+  <div class="bar">
+    <span id="win"></span>
+    <label>Range <select id="range">
+      <option value="6">Last 6 months</option>
+      <option value="12" selected>Last 12 months</option>
+      <option value="ytd">Year to date</option>
+      <option value="all">All time</option>
+      <option value="custom">Custom range</option>
+    </select></label>
+    <span id="customwrap" hidden>
+      <label>From <input type="date" id="from"></label>
+      <label>To <input type="date" id="to"></label>
+    </span>
+  </div>
+
+  <div class="status" id="status">Connecting…</div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card"><div class="strip"><span>FNC Issues by Week</span><span class="lg"><span class="dot" style="background:#b3262b"></span>FNC</span></div><div class="body"><div class="chart" id="ch-FNC"></div></div></div>
+  <div class="card"><div class="strip"><span>FBN Issues by Week</span><span class="lg"><span class="dot" style="background:#2f6fd0"></span>FBN</span></div><div class="body"><div class="chart" id="ch-FBN"></div></div></div>
+  <div class="card"><div class="strip"><span>FWX Issues by Week</span><span class="lg"><span class="dot" style="background:#2e9b3f"></span>FWX</span></div><div class="body"><div class="chart" id="ch-FWX"></div></div></div>
+  <div class="card"><div class="strip"><span>Total Issues FBN, FNC, FWX</span><span class="lg"><span class="dot" style="background:#2f6fd0"></span>Total</span></div><div class="body"><div class="chart" id="ch-TOT"></div></div></div>
+
+  <div id="custom-charts"></div>
+
+  <div class="card">
+    <div class="strip"><span>Add an issue</span><span>Saved issues appear below and in the graphs for everyone</span></div>
+    <form class="body addform" id="add" autocomplete="off">
+      <label>Date <input type="date" name="fdate" required></label>
+      <label>Network <select name="fnet" required><option value="">Choose…</option><option>FBN</option><option>FNC</option><option>FWX</option></select></label>
+      <label>Issue type <select name="ftype"><option value="">—</option><option>Technical</option><option>Operator Error</option></select></label>
+      <label>Priority <select name="fprio"><option value="">—</option><option>P-1</option><option>P-2</option><option>P-3</option></select></label>
+      <label>Included <select name="fincl"><option value="yes">Included</option><option value="no">Not included</option></select></label>
+      <label>Show <input type="text" name="fshow" maxlength="120" placeholder="Free text"></label>
+      <label>Business category <input type="text" name="fcat" list="cats" maxlength="80" placeholder="e.g. Ticker, Playout"></label>
+      <label>Was New York notified <select name="fny"><option value="">—</option><option>Yes</option><option>No</option><option>Unsure</option><option>NY Notified FNM</option></select></label>
+      <label class="wide">Description <textarea name="fdesc" rows="3" maxlength="1000" required></textarea></label>
+      <label class="wide">Summary impact <input type="text" name="fsum" maxlength="200"></label>
+      <div class="wide row"><button type="submit" id="addbtn" disabled>Save issue</button><span id="addstatus" role="status"></span></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="strip"><span>Graphs &amp; metrics</span><span>Changes save live for everyone</span></div>
+    <form class="body addform" id="bform" autocomplete="off">
+      <label>Type <select name="btype"><option value="chart">Weekly graph</option><option value="metric">Metric tile</option></select></label>
+      <label>Title <input type="text" name="btitle" maxlength="80" placeholder="e.g. Ticker issues"></label>
+      <label>Network <select name="bnet"><option value="ALL">All networks</option><option>FBN</option><option>FNC</option><option>FWX</option></select></label>
+      <label>Business category <input type="text" name="bcat" list="cats" maxlength="80" placeholder="Blank = any category"></label>
+      <div class="wide row"><span id="bstatus" role="status" style="margin-right:auto"></span><button type="button" class="ghost" id="bcancel" hidden>Cancel edit</button><button type="submit" id="bsave">Add graph or metric</button></div>
+    </form>
+    <div class="tbl-box" style="max-height:260px">
+      <table class="tbl"><thead><tr><th>Title</th><th>Type</th><th>Network</th><th>Category</th><th>Actions</th></tr></thead>
+      <tbody id="blist"></tbody></table>
+    </div>
+  </div>
+  <datalist id="cats"></datalist>
+
+  <div class="section">Issue Details</div>
+  <div class="card">
+    <div class="strip"><span>Included incidents</span><span id="cnt-dash"></span></div>
+    <div class="tools">
+      <div class="seg" id="seg-dash">
+        <button type="button" data-net="ALL" class="on">All</button>
+        <button type="button" data-net="FBN">FBN</button>
+        <button type="button" data-net="FNC">FNC</button>
+        <button type="button" data-net="FWX">FWX</button>
+      </div>
+      <div class="seg" id="srcseg-dash">
+        <button type="button" data-src="ALL" class="on">All sources</button>
+        <button type="button" data-src="portal">Portal submissions</button>
+      </div>
+      <input type="search" id="q-dash" placeholder="Search issues…" aria-label="Search issues">
+    </div>
+    <div class="status" id="actstatus" style="display:none"></div>
+    <div class="tbl-box">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Network</th><th>Show</th><th>Description</th><th>Summary Impact</th><th>Priority</th><th>Issue Type</th><th>Category</th><th>NY notified</th><th class="opt">Source</th><th>On graph</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="rows-dash"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+
+  <div id="view-all" hidden>
+  <div class="section">All Issues</div>
+  <div class="card">
+    <div class="strip"><span>Every submitted issue</span><span id="cnt-all"></span></div>
+    <div class="tools">
+      <div class="seg" id="seg-all">
+        <button type="button" data-net="ALL" class="on">All</button>
+        <button type="button" data-net="FBN">FBN</button>
+        <button type="button" data-net="FNC">FNC</button>
+        <button type="button" data-net="FWX">FWX</button>
+      </div>
+      <div class="seg" id="srcseg-all">
+        <button type="button" data-src="ALL" class="on">All sources</button>
+        <button type="button" data-src="portal">Portal submissions</button>
+      </div>
+      <input type="search" id="q-all" placeholder="Search issues…" aria-label="Search issues">
+    </div>
+    <div class="seg" id="stseg-all" style="margin-left:0">
+        <button type="button" data-st="ALL" class="on">All statuses</button>
+        <button type="button" data-st="in">Included</button>
+        <button type="button" data-st="out">Not included</button>
+      </div>
+    </div>
+    
+    <div class="tbl-box">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Network</th><th>Show</th><th>Description</th><th>Summary Impact</th><th>Priority</th><th>Issue Type</th><th>Category</th><th>NY notified</th><th class="opt">Source</th><th>On graph</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="rows-all"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+
+  <div class="foot">Weeks run Sunday to Saturday. Shaded weeks have no tracker entry and are not counted as zero-issue weeks. Tracker history comes from the FNM MC Tracker export (Include rows only; Threshold and placeholder rows removed). Portal submissions are added by team members with access.</div>
+  <div class="tip" id="tip"></div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="panel">
+    <h3 id="mtitle">Edit issue</h3>
+    <form class="addform" id="medit" autocomplete="off">
+      <label>Date <input type="date" name="date" required></label>
+      <label>Network <select name="network" required><option>FBN</option><option>FNC</option><option>FWX</option></select></label>
+      <label>Issue type <select name="issue_type"><option value="">—</option><option>Technical</option><option>Operator Error</option></select></label>
+      <label>Priority <select name="priority_level"><option value="">—</option><option>P-1</option><option>P-2</option><option>P-3</option></select></label>
+      <label class="wide">Description <textarea name="description" rows="3" maxlength="1000" required></textarea></label>
+      <label class="wide">Summary impact <input type="text" name="summary_impact" maxlength="200"></label>
+      <label>Show <input type="text" name="show" maxlength="120"></label>
+      <label>Business category <input type="text" name="business_category" list="cats" maxlength="80"></label>
+      <label>Was New York notified <select name="ny_notified"><option value="">—</option><option>Yes</option><option>No</option><option>Unsure</option><option>NY Notified FNM</option></select></label>
+      <div class="wide row"><span id="mstatus" role="status" style="margin-right:auto;font-size:12px;color:#5b6675"></span><button type="button" class="ghost" id="mcancel">Cancel</button><button type="submit" id="msave">Save changes</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const NETS = ['FNC', 'FBN', 'FWX'];
+  const COL = { FNC: '#b3262b', FBN: '#2f6fd0', FWX: '#2e9b3f', TOT: '#2f6fd0' };
+  const NAME = { FBN: 'FBN · Fox Business', FNC: 'FNC · Fox News', FWX: 'FWX · Fox Weather' };
+  const DAY = 864e5;
+  const fmtDay = d3.utcFormat('%b %-d, %Y');
+  const fmtS = d3.utcFormat('%m/%d/%y');
+  const $ = id => document.getElementById(id);
+  const tip = $('tip'), app = $('app');
+  const state = { range: '12', from: '', to: '', dash: { net: 'ALL', src: 'ALL', q: '' }, all: { net: 'ALL', src: 'ALL', q: '', st: 'ALL' } };
+  let seed = null;     // { incidents: [...], logged: [dates] }
+  let subs = [];      // portal submissions: { docId, rowId, ...fields }
+  let ovr = {};       // overrides by row id: { included, fields }
+  let db = null;
+  let editing = null; // row being edited
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function pill(net) { const p = el('span', 'pill', net); p.style.background = COL[net] || '#555'; return p; }
+  function shorten(s, n) { s = s || ''; return s.length <= n ? s : s.slice(0, n - 1) + '…'; }
+  function todayUTC() { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate())); }
+  function parseDay(s) { return new Date(s + 'T00:00:00Z'); }
+  function addDays(d, n) { return new Date(d.getTime() + n * DAY); }
+  function weekStart(d) { return new Date(d.getTime() - d.getUTCDay() * DAY); }
+  function weeksBetween(s, e) { const out = []; let w = weekStart(s); const last = weekStart(e).getTime(); while (w.getTime() <= last) { out.push(w); w = addDays(w, 7); } return out; }
+  function fmtRange(w) { return fmtS(w) + ' - ' + fmtS(addDays(w, 6)); }
+  function saveError(e) {
+    const code = e && e.code;
+    if (code === 'invalid_argument') return "Couldn't save. Editing needs Contributor access. Ask the owner.";
+    if (code === 'resource_exhausted') return 'Too many changes at once. Try again in a moment.';
+    if (code === 'quota_exceeded') return 'The store is full. Ask the owner.';
+    if (code === 'revoked') return 'Your access changed. Reload to continue.';
+    return "Couldn't save right now. Try again.";
+  }
+  function setActStatus(msg, bad) { const s = $('actstatus'); s.textContent = msg; s.style.display = msg ? '' : 'none'; s.className = 'status' + (bad ? ' bad' : ''); }
+
+  // ---- tooltips
+  function showTip(ev, node) { tip.replaceChildren(node); tip.style.display = 'block'; moveTip(ev); }
+  function moveTip(ev) {
+    const r = app.getBoundingClientRect();
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 14;
+    if (x + w > r.width - 4) x = ev.clientX - r.left - w - 14;
+    if (x < 4) x = 4;
+    if (y + h > r.height - 4) y = Math.max(4, r.height - h - 4);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; }
+  function attachTip(node, make) { node.addEventListener('mouseenter', ev => showTip(ev, make())); node.addEventListener('mousemove', moveTip); node.addEventListener('mouseleave', hideTip); }
+  function issueNode(r) {
+    const box = el('div');
+    box.append(el('div', 'tt-h', NAME[r.network]));
+    box.append(el('div', 'tt-sub', fmtDay(r.d) + (r.show ? ' · ' + r.show : '') + (r.included ? '' : ' · Excluded from graph')));
+    box.append(el('div', null, r.description));
+    return box;
+  }
+  function weekNode(b, key) {
+    const items = (key === 'TOT' ? b.items : b.items.filter(r => r.network === key)).slice().sort((a, c) => a.d - c.d);
+    const label = key === 'TOT' ? 'All networks' : NAME[key];
+    const box = el('div');
+    box.append(el('div', 'tt-h', fmtRange(b.w)));
+    let sub;
+    if (items.length) sub = items.length + (items.length > 1 ? ' issues' : ' issue') + ' · ' + label;
+    else sub = b.logged ? 'No issues · ' + label : 'No tracker entry for this week';
+    box.append(el('div', 'tt-sub', sub));
+    items.slice(0, 6).forEach(r => {
+      const it = el('div', 'tt-item');
+      if (key === 'TOT') { it.append(pill(r.network)); it.append(document.createTextNode(' ')); }
+      it.append(el('span', 'tt-d', fmtDay(r.d) + (r.show ? ' · ' + r.show : '')));
+      it.append(el('div', null, shorten(r.description, 170)));
+      box.append(it);
+    });
+    if (items.length > 6) box.append(el('div', 'tt-sub', '+' + (items.length - 6) + ' more'));
+    return box;
+  }
+
+  // ---- charts
+  function drawLine(host, B, key, yMax, colour) {
+    const col = colour || COL[key];
+    host.replaceChildren();
+    const W = Math.max(300, host.clientWidth), H = 250;
+    const m = { t: 22, r: 14, b: 84, l: 28 };
+    const svg = d3.select(host).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`);
+    const n = B.length;
+    const x = d3.scalePoint().domain(d3.range(n)).range([m.l + 8, W - m.r - 8]);
+    const step = n > 1 ? x(1) - x(0) : W - m.l - m.r;
+    const y = d3.scaleLinear().domain([0, yMax]).range([H - m.b, m.t]);
+    const vals = B.map(b => key === 'TOT' ? b.items.length : b.byNet[key]);
+    y.ticks(Math.min(8, yMax)).filter(Number.isInteger).forEach(t => {
+      svg.append('line').attr('class', 'grid').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t));
+      svg.append('text').attr('x', m.l - 6).attr('y', y(t) + 3).attr('text-anchor', 'end').text(t);
+    });
+    B.forEach((b, i) => { if (!b.logged) svg.append('rect').attr('class', 'shade').attr('x', x(i) - step / 2).attr('width', step).attr('y', m.t).attr('height', H - m.b - m.t); });
+    const area = d3.area().x((v, i) => x(i)).y0(H - m.b).y1((v, i) => y(v));
+    const line = d3.line().x((v, i) => x(i)).y((v, i) => y(v));
+    svg.append('path').datum(vals).attr('d', area).attr('fill', col).attr('fill-opacity', 0.12);
+    svg.append('path').datum(vals).attr('d', line).attr('fill', 'none').attr('stroke', col).attr('stroke-width', 2).attr('stroke-linejoin', 'round');
+    const every = step >= 14 ? 1 : Math.ceil(14 / step);
+    vals.forEach((v, i) => { if (i % every) return; svg.append('text').attr('class', 'val').attr('x', x(i)).attr('y', y(v) - 7).attr('text-anchor', 'middle').text(v); });
+    svg.selectAll('circle.pt').data(vals).join('circle').attr('class', 'pt').attr('cx', (v, i) => x(i)).attr('cy', v => y(v)).attr('r', 2.5).attr('fill', col);
+    const lStep = Math.max(1, Math.ceil(n / Math.max(4, Math.floor((W - m.l) / 15))));
+    B.forEach((b, i) => { if (i % lStep) return; svg.append('text').attr('transform', `translate(${x(i)},${H - m.b + 8}) rotate(-50)`).attr('text-anchor', 'end').text(fmtRange(b.w)); });
+    B.forEach((b, i) => { const r = svg.append('rect').attr('class', 'col').attr('x', x(i) - step / 2).attr('width', step).attr('y', m.t).attr('height', H - m.b - m.t); attachTip(r.node(), () => weekNode(b, key)); });
+  }
+
+  // ---- row model: base record (tracker or portal) + override (include flag, edited fields)
+  function allRows() {
+    const base = [];
+    (seed && seed.incidents || []).forEach(r => base.push(Object.assign({}, r, { rowId: r.id, docId: null, src: 'tracker' })));
+    subs.forEach(s => base.push(Object.assign({}, s, { rowId: s.rowId, docId: s.docId, src: 'portal' })));
+    return base.map(r => {
+      const o = ovr[r.rowId] || {};
+      const f = Object.assign({}, r, o.fields || {});
+      return {
+        rowId: r.rowId, docId: r.docId, src: r.src,
+        included: o.included !== undefined ? o.included !== false : r.included !== false,
+        date: f.date, network: f.network, show: f.show || '', issue_type: f.issue_type || '',
+        description: f.description || '', summary_impact: f.summary_impact || '', priority_level: f.priority_level || '',
+        ny_notified: f.ny_notified || '', time: f.time || '', imported: !!f.imported,
+        business_category: f.business_category || '',
+        added_at: f.added_at || '', d: parseDay(f.date)
+      };
+    }).filter(r => NETS.includes(r.network) && !isNaN(r.d)).sort((a, b) => a.d - b.d);
+  }
+
+  function draw() {
+    if (!seed) return;
+    const today = todayUTC();
+    const rows = allRows();
+    const counted = rows.filter(r => r.included);
+    const logged = (seed.logged || []).map(parseDay).filter(d => !isNaN(d));
+    let start, end = today;
+    if (state.range === 'all') {
+      const dates = rows.map(r => r.d).concat(logged);
+      start = new Date(Math.min(...dates)); end = new Date(Math.max(...dates));
+    } else if (state.range === 'ytd') {
+      start = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
+    } else if (state.range === 'custom') {
+      start = state.from ? parseDay(state.from) : new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 12, today.getUTCDate()));
+      end = state.to ? parseDay(state.to) : today;
+      if (start > end) { const t = start; start = end; end = t; }
+    } else {
+      const mo = +state.range;
+      start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - mo, today.getUTCDate()));
+    }
+    const weeks = weeksBetween(start, end);
+    const idx = new Map(weeks.map((w, i) => [w.getTime(), i]));
+    const B = weeks.map(w => ({ w, logged: false, items: [], byNet: { FNC: 0, FBN: 0, FWX: 0 } }));
+    logged.forEach(d => { if (d < start || d > end) return; const i = idx.get(weekStart(d).getTime()); if (i !== undefined) B[i].logged = true; });
+    const inWin = counted.filter(r => r.d >= start && r.d <= end);
+    inWin.forEach(r => { const i = idx.get(weekStart(r.d).getTime()); if (i === undefined) return; B[i].items.push(r); B[i].byNet[r.network]++; B[i].logged = true; });
+
+    const total = inWin.length;
+    const excludedCount = rows.length - counted.length;
+    const per = { FNC: 0, FBN: 0, FWX: 0 }; inWin.forEach(r => per[r.network]++);
+    const weeksLogged = B.filter(b => b.logged).length;
+    const weeksWith = B.filter(b => b.items.length).length;
+    const yMax = Math.max(16, d3.max(B, b => b.items.length) || 0);
+
+    $('win').textContent = 'Showing ' + fmtDay(start) + ' – ' + fmtDay(end) + ' · Weeks run Sunday to Saturday';
+    const kpis = $('kpis'); kpis.replaceChildren();
+    const kpi = (label, value, sub) => { const c = el('div', 'kpi'); c.append(el('div', 'l', label), el('div', 'v', String(value)), el('div', 's', sub)); kpis.append(c); };
+    kpi('Total issues', total, weeksWith + ' of ' + weeksLogged + ' logged weeks had issues' + (excludedCount ? ' · ' + excludedCount + ' excluded' : ''));
+    NETS.forEach(n => kpi(n, per[n], (total ? Math.round(per[n] / total * 100) : 0) + '% of issues · ' + NAME[n].split(' · ')[1]));
+
+    drawLine($('ch-FNC'), B, 'FNC', yMax);
+    drawLine($('ch-FBN'), B, 'FBN', yMax);
+    drawLine($('ch-FWX'), B, 'FWX', yMax);
+    drawLine($('ch-TOT'), B, 'TOT', yMax);
+
+    // custom graphs and metric tiles from the builder
+    const customHost = $('custom-charts'); customHost.replaceChildren();
+    configs.forEach((cfg, k) => {
+      const inCfg = inWin.filter(r => cfgMatches(cfg, r));
+      const scope = (cfg.network === 'ALL' ? 'All networks' : cfg.network) + (cfg.category ? ' · ' + cfg.category : '');
+      if (cfg.type === 'metric') {
+        kpi(cfg.title, inCfg.length, scope + ' · selected range');
+        return;
+      }
+      const cB = weeks.map((w, i) => ({ w, logged: B[i].logged, items: [], byNet: { FNC: 0, FBN: 0, FWX: 0 } }));
+      inCfg.forEach(r => { const i = idx.get(weekStart(r.d).getTime()); if (i === undefined) return; cB[i].items.push(r); cB[i].byNet[r.network]++; });
+      const card = el('div', 'card');
+      const strip = el('div', 'strip'); strip.append(el('span', null, cfg.title), el('span', null, scope));
+      const body = el('div', 'body'); const chart = el('div', 'chart');
+      body.append(chart); card.append(strip, body); customHost.append(card);
+      drawLine(chart, cB, 'TOT', yMax, PALETTE[k % PALETTE.length]);
+    });
+
+    // business category suggestions and the builder list
+    const cats = new Set();
+    rows.forEach(r => { if (r.business_category) cats.add(r.business_category); });
+    configs.forEach(c => { if (c.category) cats.add(c.category); });
+    $('cats').replaceChildren(...[...cats].sort().map(v => { const o = el('option'); o.value = v; return o; }));
+    renderBuilder();
+
+    renderGrid('dash', rows);
+    renderGrid('all', rows);
+  }
+
+  function viewRows(v, rows) {
+    const s = state[v]; const q = (s.q || '').toLowerCase();
+    return rows.filter(r =>
+      (v === 'dash' ? r.included : (s.st === 'ALL' || (s.st === 'in' ? r.included : !r.included)))
+      && (s.net === 'ALL' || r.network === s.net)
+      && (s.src === 'ALL' || r.src === s.src)
+      && (!q || [r.network, r.show, r.issue_type, r.description, r.summary_impact].some(x => (x || '').toLowerCase().includes(q))));
+  }
+  function renderGrid(v, rows) {
+    const items = viewRows(v, rows);
+    if (v === 'dash') $('cnt-dash').textContent = 'Showing ' + items.length + ' included issues';
+    else $('cnt-all').textContent = 'Showing ' + items.length + ' of ' + rows.length + ' issues (' + rows.filter(r => !r.included).length + ' not included)';
+    renderRows(items, $('rows-' + v));
+  }
+  function renderRows(items, tb) {
+    tb.replaceChildren();
+    if (!items.length) { const tr = el('tr'); const td = el('td', 'empty', 'No issues match this view'); td.colSpan = 12; tr.append(td); tb.append(tr); return; }
+    items.forEach(r => {
+      const tr = el('tr', r.included ? null : 'off');
+      tr.dataset.key = r.rowId;
+      tr.append(el('td', null, fmtDay(r.d) + (r.time ? ' ' + r.time : '')));
+      const tn = el('td'); tn.append(pill(r.network)); tr.append(tn);
+      tr.append(el('td', null, r.show || '—'));
+      const td = el('td', 'issue'); td.append(el('div', 'clamp', r.description)); tr.append(td);
+      tr.append(el('td', null, r.summary_impact || '—'));
+      tr.append(el('td', null, r.priority_level || '—'));
+      tr.append(el('td', null, r.issue_type || '—'));
+      tr.append(el('td', null, r.business_category || '—'));
+      tr.append(el('td', null, r.ny_notified || '—'));
+      tr.append(el('td', 'opt', r.imported ? 'Imported' : (r.src === 'portal' ? 'Portal submission' : 'Tracker')));
+
+      // include on graph
+      const tc = el('td', 'ctl');
+      const sel = el('select');
+      sel.setAttribute('aria-label', 'Include on graph');
+      [['yes', 'Included on graph'], ['no', 'Excluded from graph']].forEach(([v, t]) => {
+        const o = el('option', null, t); o.value = v; if ((v === 'yes') === r.included) o.selected = true; sel.append(o);
+      });
+      sel.addEventListener('change', () => setIncluded(r, sel.value === 'yes', sel));
+      tc.append(sel); tr.append(tc);
+
+      // actions
+      const ta = el('td', 'acts');
+      const eb = el('button', 'ghost', 'Edit'); eb.type = 'button';
+      eb.addEventListener('click', () => openEdit(r));
+      ta.append(eb);
+      if (r.src === 'portal') {
+        const db2 = el('button', 'danger', 'Delete'); db2.type = 'button';
+        db2.addEventListener('click', () => armDelete(db2, r));
+        ta.append(db2);
+      }
+      tr.append(ta);
+
+      attachTip(tr, () => issueNode(r));
+      tb.append(tr);
+    });
+  }
+
+  // ---- writes (all require Contributor access)
+  async function setIncluded(r, included, sel) {
+    if (!db) return;
+    sel.disabled = true;
+    try {
+      const prev = ovr[r.rowId] || {};
+      await db.collection('overrides').doc(r.rowId).set(Object.assign({}, prev, { included, updated_at: new Date().toISOString() }));
+      setActStatus(included ? 'Included on the graphs.' : 'Excluded from the graphs. The record is kept.');
+    } catch (e) { setActStatus(saveError(e), true); sel.value = r.included ? 'yes' : 'no'; }
+    finally { sel.disabled = false; }
+  }
+
+  let editRow = null;
+  function openEdit(r) {
+    editRow = r;
+    const f = $('medit');
+    f.querySelector('[name="date"]').value = r.date;
+    f.querySelector('[name="network"]').value = r.network;
+    f.querySelector('[name="issue_type"]').value = r.issue_type;
+    f.querySelector('[name="priority_level"]').value = r.priority_level;
+    f.querySelector('[name="description"]').value = r.description;
+    f.querySelector('[name="summary_impact"]').value = r.summary_impact;
+    f.querySelector('[name="show"]').value = r.show;
+    f.querySelector('[name="business_category"]').value = r.business_category;
+    f.querySelector('[name="ny_notified"]').value = r.ny_notified;
+    $('mtitle').textContent = (r.src === 'portal' ? 'Edit submission' : 'Edit tracker entry') + ' · ' + fmtDay(r.d);
+    $('mstatus').textContent = r.src === 'tracker' ? 'Tracker history is edited as an override; the original export is kept.' : '';
+    $('modal').hidden = false;
+  }
+  function closeEdit() { $('modal').hidden = true; editRow = null; }
+  $('mcancel').addEventListener('click', closeEdit);
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeEdit(); });
+  $('medit').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!editRow || !db) return;
+    const f = $('medit');
+    const changes = {};
+    ['date', 'network', 'issue_type', 'priority_level', 'description', 'summary_impact', 'show', 'ny_notified', 'business_category'].forEach(k => { changes[k] = f.querySelector('[name="' + k + '"]').value.trim(); });
+    if (!changes.date || !changes.network || !changes.description) { $('mstatus').textContent = 'Date, network and description are required.'; return; }
+    $('msave').disabled = true; $('mstatus').textContent = 'Saving…';
+    try {
+      if (editRow.src === 'portal') {
+        await db.collection('issues').doc(editRow.docId).update(Object.assign(changes, { edited_at: new Date().toISOString() }));
+      } else {
+        const prev = ovr[editRow.rowId] || {};
+        await db.collection('overrides').doc(editRow.rowId).set(Object.assign({}, prev, { fields: changes, updated_at: new Date().toISOString() }));
+      }
+      setActStatus('Changes saved.');
+      closeEdit();
+    } catch (err) { $('mstatus').textContent = saveError(err); }
+    finally { $('msave').disabled = false; }
+  });
+
+  // Delete needs a second click, so it can't happen by accident
+  function armDelete(btn, r) {
+    if (!btn.dataset.armed) {
+      btn.dataset.armed = '1'; btn.textContent = 'Confirm delete';
+      setTimeout(() => { if (btn.isConnected && btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = 'Delete'; } }, 4000);
+      return;
+    }
+    deleteSubmission(r);
+  }
+  async function deleteSubmission(r) {
+    if (!db) return;
+    try {
+      await db.collection('issues').doc(r.docId).delete();
+      await db.collection('overrides').doc(r.rowId).delete();
+      setActStatus('Submission deleted.');
+    } catch (e) { setActStatus(saveError(e), true); }
+  }
+
+  // ---- filters
+  function setStatus(msg, bad) { const s = $('status'); s.textContent = msg; s.className = 'status' + (bad ? ' bad' : ''); s.style.display = msg ? '' : 'none'; }
+  $('range').addEventListener('change', e => { state.range = e.target.value; $('customwrap').hidden = state.range !== 'custom'; draw(); });
+  $('from').addEventListener('change', e => { state.from = e.target.value; draw(); });
+  $('to').addEventListener('change', e => { state.to = e.target.value; draw(); });
+  function setOn(group, b) { group.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
+  ['dash', 'all'].forEach(v => {
+    $('q-' + v).addEventListener('input', e => { state[v].q = e.target.value.trim(); draw(); });
+    $('seg-' + v).addEventListener('click', e => { const b = e.target.closest('button[data-net]'); if (!b) return; state[v].net = b.dataset.net; setOn($('seg-' + v), b); draw(); });
+    $('srcseg-' + v).addEventListener('click', e => { const b = e.target.closest('button[data-src]'); if (!b) return; state[v].src = b.dataset.src; setOn($('srcseg-' + v), b); draw(); });
+  });
+  $('stseg-all').addEventListener('click', e => { const b = e.target.closest('button[data-st]'); if (!b) return; state.all.st = b.dataset.st; setOn($('stseg-all'), b); draw(); });
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-view]'); if (!b) return;
+    setOn($('tabs'), b);
+    $('view-dash').hidden = b.dataset.view !== 'dash';
+    $('view-all').hidden = b.dataset.view !== 'all';
+  });
+
+  // ---- add an issue
+  const addForm = $('add');
+  addForm.querySelector('[name="fdate"]').value = new Date().toISOString().slice(0, 10);
+  addForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) return;
+    const get = n => addForm.querySelector('[name="' + n + '"]').value.trim();
+    const data = { date: get('fdate'), network: get('fnet'), description: get('fdesc'), issue_type: get('ftype'),
+                   priority_level: get('fprio'), summary_impact: get('fsum'), included: get('fincl') !== 'no',
+                   show: get('fshow'), ny_notified: get('fny'), business_category: get('fcat'),
+                   added_at: new Date().toISOString(), source: 'portal' };
+    const msg = $('addstatus');
+    if (!data.date || !data.network || !data.description) { msg.textContent = 'Date, network and description are required.'; return; }
+    $('addbtn').disabled = true; msg.textContent = 'Saving…';
+    try {
+      await db.collection('issues').add(data);
+      addForm.querySelector('[name="fdesc"]').value = '';
+      addForm.querySelector('[name="fsum"]').value = '';
+      addForm.querySelector('[name="fshow"]').value = '';
+      msg.textContent = 'Saved. The graphs and list are updated.';
+    } catch (err) { msg.textContent = saveError(err); }
+    finally { $('addbtn').disabled = false; }
+  });
+
+  // ---- graphs & metrics builder (shared storage, live)
+  const PALETTE = ['#7b3fb0', '#c77700', '#00838f', '#8e24aa', '#546e7a', '#ad1457'];
+  let configs = [];
+  let editCfgId = null;
+  function cfgMatches(cfg, r) {
+    return r.included
+      && (cfg.network === 'ALL' || r.network === cfg.network)
+      && (!cfg.category || (r.business_category || '').trim().toLowerCase() === cfg.category.trim().toLowerCase());
+  }
+  function renderBuilder() {
+    const tb = $('blist'); tb.replaceChildren();
+    if (!configs.length) { const tr = el('tr'); const td = el('td', 'empty', 'No graphs or metrics yet.'); td.colSpan = 5; tr.append(td); tb.append(tr); return; }
+    configs.forEach(c => {
+      const tr = el('tr');
+      tr.append(el('td', null, c.title), el('td', null, c.type === 'metric' ? 'Metric tile' : 'Weekly graph'),
+                el('td', null, c.network === 'ALL' ? 'All' : c.network), el('td', null, c.category || 'Any'));
+      const ta = el('td', 'acts');
+      const eb = el('button', 'ghost', 'Edit'); eb.type = 'button';
+      eb.addEventListener('click', () => loadCfg(c));
+      const dl = el('button', 'danger', 'Delete'); dl.type = 'button';
+      dl.addEventListener('click', () => armCfgDelete(dl, c.id));
+      ta.append(eb, dl); tr.append(ta); tb.append(tr);
+    });
+  }
+  function loadCfg(c) {
+    editCfgId = c.id;
+    const f = $('bform');
+    f.querySelector('[name="btype"]').value = c.type === 'metric' ? 'metric' : 'chart';
+    f.querySelector('[name="btitle"]').value = c.title || '';
+    f.querySelector('[name="bnet"]').value = c.network || 'ALL';
+    f.querySelector('[name="bcat"]').value = c.category || '';
+    $('bsave').textContent = 'Save changes';
+    $('bcancel').hidden = false;
+    $('bstatus').textContent = 'Editing: ' + (c.title || '');
+  }
+  function resetBuilder() {
+    editCfgId = null;
+    $('bform').reset();
+    $('bsave').textContent = 'Add graph or metric';
+    $('bcancel').hidden = true;
+    $('bstatus').textContent = '';
+  }
+  $('bcancel').addEventListener('click', resetBuilder);
+  $('bform').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) return;
+    const f = $('bform');
+    const get = n => f.querySelector('[name="' + n + '"]').value.trim();
+    const now = new Date().toISOString();
+    const data = { type: get('btype') === 'metric' ? 'metric' : 'chart', title: get('btitle'), network: get('bnet') || 'ALL', category: get('bcat'), updated_at: now };
+    if (!data.title) { $('bstatus').textContent = 'A title is required.'; return; }
+    $('bsave').disabled = true; $('bstatus').textContent = 'Saving…';
+    try {
+      if (editCfgId) {
+        const prev = configs.find(c => c.id === editCfgId) || {};
+        await db.collection('charts').doc(editCfgId).set(Object.assign({ created_at: prev.created_at || now }, data));
+      } else {
+        await db.collection('charts').add(Object.assign({ created_at: now }, data));
+      }
+      resetBuilder();
+      $('bstatus').textContent = 'Saved. The dashboard is updated.';
+    } catch (err) { $('bstatus').textContent = saveError(err); }
+    finally { $('bsave').disabled = false; }
+  });
+  function armCfgDelete(btn, id) {
+    if (!btn.dataset.armed) {
+      btn.dataset.armed = '1'; btn.textContent = 'Confirm delete';
+      setTimeout(() => { if (btn.isConnected && btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = 'Delete'; } }, 4000);
+      return;
+    }
+    db.collection('charts').doc(id).delete()
+      .then(() => { if (editCfgId === id) resetBuilder(); setActStatus('Graph or metric removed.'); })
+      .catch(err => setActStatus(saveError(err), true));
+  }
+
+  // ---- live data
+  (async function init() {
+    let d = null;
+    try { d = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { d = null; }
+    if (!d) { setStatus('Live data is not available in this view.', true); $('addstatus').textContent = 'Saving is not available in this view.'; return; }
+    db = d;
+    $('addbtn').disabled = false;
+    d.doc('seed/tracker').onSnapshot(snap => {
+      if (snap.exists) seed = snap.data() || null;
+      setStatus(seed ? '' : 'Loading tracker history…');
+      draw();
+    }, e => setStatus('Could not load tracker history: ' + (e && e.message || 'unknown'), true));
+    d.collection('issues').onSnapshot(snap => {
+      subs = snap.docs.filter(x => x.exists).map(x => Object.assign({}, x.data(), { docId: x.id, rowId: 'portal-' + x.id }));
+      draw();
+    }, e => setStatus('Could not load submissions: ' + (e && e.message || 'unknown'), true));
+    d.collection('charts').onSnapshot(snap => {
+      configs = snap.docs.filter(x => x.exists).map(x => Object.assign({ id: x.id }, x.data()))
+        .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+      draw();
+    }, e => setActStatus('Could not load graphs: ' + (e && e.message || 'unknown'), true));
+    d.collection('overrides').onSnapshot(snap => {
+      const next = {};
+      snap.docs.filter(x => x.exists).forEach(x => { next[x.id] = x.data() || {}; });
+      ovr = next;
+      draw();
+    }, e => setStatus('Could not load graph settings: ' + (e && e.message || 'unknown'), true));
+  })();
+})();
+</script>
+</body>
+</html>
